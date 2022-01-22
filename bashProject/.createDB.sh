@@ -7,7 +7,8 @@ do
                 read -p "Enter the database name : " dbName
                 if [ -z "$dbName" ]
                 then echo "This field is required!"
-                else
+                elif [[ $dbName =~ ^[a-zA-Z]*$ ]]
+                then 
                     if [[ "$PWD" = *bashProject ]]
                     then
                     if [ -d "$dbName" ]
@@ -27,6 +28,9 @@ do
                         echo "DATABASE $dbName is successfully created."
                         fi  
                     fi
+                else
+                echo "must containes characters only"
+
                   fi  
                 ;;
             'LIST DATABASE') 
@@ -77,8 +81,11 @@ do
                         if [ -d "$dbName" ]
                             then 
                             rm -r -i $dbName
-                            echo "DATABASE $dbName is successfully deleted." 
-                            else  
+                            if [ -d "$dbName" ]
+                            then echo "DATABASE $dbName failed to be deleted." 
+                            else echo "DATABASE $dbName is successfully deleted." 
+                            fi
+                        else  
                             echo "$dbName database is not exist."
                         fi 
                     else

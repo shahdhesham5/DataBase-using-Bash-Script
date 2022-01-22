@@ -7,7 +7,8 @@ integeregex="[0-9]+"
 passwordregex="[a-zA-Z0-9]+"
 emailregex="[a-zA-Z0-9]+@[a-z]+.com"
 dateregex="[0-9][0-9]*+/[0-9][0-9]*+/[0-9][0-9][0-9][0-9]+"
-
+flag2=false
+flag=true
  echo "Database MENU : "
 select opt2 in 'CREATE TABLE' 'LIST TABLES' 'DROP TABLE' 'SELECT FROM TABLE' 'INSERT INTO TABLE' 'DELETE FROM TABLE' 'BACK' 
 do
@@ -16,7 +17,8 @@ do
         read -p "Enter the table name : " tName   
         if [ -z "$tName" ]
         then echo "This field is required!"
-        else
+        elif [[ $tName =~ ^[a-zA-Z]*$ ]]
+         then
             tNameMeta=".${tName}metadata"
             if [ -f "$tNameMeta" ]
             then
@@ -27,7 +29,9 @@ do
                 then 
                     echo "This field is required!" 
                     break
-                else
+                elif [[ $field =~ ^[a-zA-Z]*$ ]]
+                then
+                    flag2=true
                     numFields=0
                     num=0;
                     touch $tName 
@@ -40,7 +44,9 @@ do
                     then 
                         echo "This field is required!" 
                         break
-                    else
+                    elif [[ $field =~ ^[a-zA-Z]*$ ]]
+                    then
+                     flag2=true
                         while [[ "$field" ]]
                         do
                             fieldsarray[$num+1]=$field
@@ -49,6 +55,7 @@ do
                             num+=1
                             read -p "Enter the fields of the table : " field
                         done
+                    else   echo "must containes characters only"
                     fi
                 fi
                 echo ''>> $tNameMeta
@@ -56,7 +63,7 @@ do
                 for((i=2 ;i<=$numFields ;i++))
                     do
                     echo "Select the datatype of field ${fieldsarray[$i-1]} : "
-                    select opt3 in 'Integer' 'Varchar' 'Password' 'Date' 'Email' 'EXIT' 
+                    select opt3 in 'Integer' 'Varchar' 'Password' 'Date' 'Email' 
                     do
                         case $opt3 in
                         'Integer') 
@@ -109,15 +116,24 @@ do
                             fi 
                                 break
                             ;;
-                        'EXIT')
-                            break
-                            ;;
+                       
                         esac
                     done
-                done               
+                done  
+            if [ "$flag2" = true ]
+            then             
             echo "TABLE $tName is successfully created."
+            else
+              rm  $tName
+              rm  ".${tName}metadata"
+             echo "TABLE $tName  doesn't be created."
+             fi
+           
             fi 
+           else
+             echo "must containes characters only"  
         fi
+        
         ;;
     'LIST TABLES') 
         echo "ALL EXISTED TABLES : " 
@@ -132,13 +148,18 @@ do
                 then 
                 rm -i $tName
                 rm -i ".${tName}metadata"
+                if [ -f "$tName" ] || [ -f ".${tName}metadata" ] 
+                then
+                echo "Table $tName is failed to be deleted completly."
+                else
                 echo "Table $tName is successfully deleted."
+                fi
                 else  
                 echo "$tName table is not exist."
             fi  
         fi
         ;;
-    'SELECT FROM TABLE') 
+      'SELECT FROM TABLE') 
             select pt in 'SELECT ALL RECORDS' 'SELECT ALL WITH NUMBERED RECORDS' 'SELECT RANGE OF RECORDS' 'SELECT SINGLE RECORD' 'BACK'
             do
                 case $pt in
@@ -280,6 +301,7 @@ do
             done
         ;;
 
+
     'INSERT INTO TABLE')
         read -p "Entere name of table " tName   
         if [ -z "$tName" ]
@@ -299,15 +321,46 @@ do
                 numFields=$(awk -F: '{numFields = NF}END { print numFields } '<".${tName}metadata")
                 for((i=2 ;i<=$numFields;i++))
                 do
-                    read -p "Enter the $(head -n 1 ".${tName}metadata"|cut -d: -f$i) " data   
+                    echo $flag
+                    read -p "Enter the $(head -n 1 ".${tName}metadata"|cut -d: -f$i) " data  
+                     echo "$(tail -n 1 ".${tName}metadata"|cut -d: -f$i) " 
+                    
+                     flag=true
+                    case $(tail -n 1 ".${tName}metadata"|cut -d: -f$i)  in
+                     'Varchar')
+                        [[ $data =~ ^[a-zA-Z]*$ ]] &&  flag=true || i=$i-1 flag=false
+                     ;;
+
+                    'Integer')
+                    [[ $data =~ ^[0-9]+$ ]] && flag=true || i=$i-1 flag=false
+                     ;;
+                      'Date')
+                    [[ $data =~ ^[0-9][0-9]*+/[0-9][0-9]*+/[0-9][0-9][0-9][0-9]+$ ]] && flag=true || i=$i-1 flag=false
+                     ;;
+                      'Email')
+                    [[ $data =~ ^[a-zA-Z0-9]+@[a-z]+.[a-z]{2,3}$ ]] && flag=true || i=$i-1 flag=false
+                     ;;
+                    *)
+                    echo "end of data validation"  
+                 ;;
+                  esac
+          
+
                     if [ -z "$data" ]
-                    then echo "This field is required!"
+                    then 
+                    echo "This field is required!"
+                    i=$i-1
                     else
+                        if [ "$flag" = false ]
+                        then
+                        continue
+                        else
                         if [ "$i" == "$numFields" ]
                         then
                         echo -n $data >> $tName
                         else
                         echo -n $data':' >> $tName
+                        fi
                         fi
                     fi
                 done 
@@ -317,7 +370,7 @@ do
             fi
         fi
         ;;
-    'DELETE FROM TABLE')
+     'DELETE FROM TABLE')
             select del in 'DELETE ALL RECORDS' 'DELETE RANGE OF RECORDS' 'DELETE A SINGLE RECORD' 'BACK'
             do
                 case $del in
