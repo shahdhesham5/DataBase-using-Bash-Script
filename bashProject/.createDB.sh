@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "Database System"
 echo "MAIN MENU : "
 select opt1 in 'CREATE DATABASE' 'LIST DATABASE' 'CONNECT TO DATABASE' 'DELETE DATABASE' 'EXIT' 
 do
